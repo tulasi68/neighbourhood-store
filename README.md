@@ -12,7 +12,7 @@ Lightweight, mobile-first web application for neighbourhood supermarkets in Indi
 - No app install required – works in any mobile browser
 - OTP login for buyers (prevents spam)
 - Per-store catalogue with categories
-- Bulk seed data (CSV) of common Indian grocery items
+- Bulk seed data (CSV + Excel) of common Indian grocery items
 - Shopkeeper can add / edit / delete products for their store only
 - Admin has full write / modify / delete access everywhere
 - Payment options are placeholders the shopkeeper fills (GPay / UPI, Cash, QR, Payment Link)
@@ -67,11 +67,33 @@ Lightweight, mobile-first web application for neighbourhood supermarkets in Indi
 | Shopkeeper  | Store Code + PIN (created by Admin)   | Own store only                 |
 | Buyer       | Any mobile + OTP (demo OTP shown on screen for pilot) | OTP required to place order |
 
-> **Production note**: Replace the demo OTP mechanism with a real SMS gateway (MSG91, Twilio, etc.).
+## Production OTP / SMS Configuration
+
+The pilot uses a fixed demo OTP (`123456`) that is also returned in the API response so you can test without an SMS provider.
+
+**Before public launch**, replace the demo logic in `functions/api/auth.js` with a real SMS gateway:
+
+| Provider | Typical use in India | Notes |
+|----------|----------------------|-------|
+| **MSG91** | Very common, good India coverage | Transactional OTP templates |
+| **Twilio** | Global, reliable | Slightly higher cost |
+| **Fast2SMS / TextLocal** | Budget options | Check DLT registration |
+
+Recommended flow:
+1. Generate a 6-digit OTP, store hashed + expiry in the `otps` table.
+2. Call the SMS provider API (keep the API key in Cloudflare secrets: `wrangler secret put SMS_API_KEY`).
+3. Never return the OTP in the API response in production.
+4. Rate-limit OTP requests per mobile (e.g. 1 per 60 seconds, max 5 per hour).
+
+Example secret setup:
+```bash
+wrangler secret put SMS_API_KEY
+wrangler secret put SMS_SENDER_ID
+```
 
 ## Seed Data
 
-`seed/products_seed.csv` contains 90+ common Indian grocery items across categories:
+`seed/products_seed.csv` **and** `seed/products_seed.xlsx` contain 90+ common Indian grocery items across categories:
 
 - Staples (Rice, Atta, Dal, Oil, Sugar…)
 - Dairy
@@ -97,6 +119,7 @@ Shopkeepers can import this CSV or add items one-by-one from their dashboard.
 │   └── js/                 # Role-based modules
 ├── functions/api/          # Cloudflare Pages Functions
 ├── seed/products_seed.csv
+├── seed/products_seed.xlsx
 ├── schema.sql
 └── wrangler.toml
 ```
