@@ -1,0 +1,103 @@
+Category,Item Name,Weight,Volume,MRP,Selling Price,Stock
+Staples,Sona Masoori Rice,5 kg,,320,299,50
+Staples,Sona Masoori Rice,1 kg,,70,65,100
+Staples,Basmati Rice (India Gate),1 kg,,180,165,40
+Staples,Basmati Rice (India Gate),5 kg,,850,799,20
+Staples,Atta (Aashirvaad),5 kg,,280,265,60
+Staples,Atta (Aashirvaad),10 kg,,540,510,30
+Staples,Atta (Pillsbury),5 kg,,275,260,40
+Staples,Maida,1 kg,,55,50,50
+Staples,Rava / Sooji,1 kg,,60,55,40
+Staples,Toor Dal,1 kg,,160,149,50
+Staples,Moong Dal,1 kg,,140,129,40
+Staples,Chana Dal,1 kg,,110,99,40
+Staples,Urad Dal,1 kg,,150,139,30
+Staples,Masoor Dal,1 kg,,120,110,35
+Staples,Rajma,1 kg,,160,149,25
+Staples,Kabuli Chana,1 kg,,130,119,30
+Staples,Sugar,1 kg,,50,45,80
+Staples,Jaggery (Gud),1 kg,,80,72,40
+Staples,Salt (Tata),1 kg,,25,22,100
+Staples,Sunflower Oil,1 L,,160,149,50
+Staples,Mustard Oil,1 L,,180,169,40
+Staples,Groundnut Oil,1 L,,190,175,30
+Staples,Coconut Oil,500 ml,,180,165,25
+Staples,Ghee (Amul),1 L,,650,620,20
+Staples,Ghee (Amul),500 ml,,340,325,30
+Dairy,Milk (Amul Toned),500 ml,,30,28,100
+Dairy,Milk (Amul Full Cream),500 ml,,35,33,80
+Dairy,Milk (Nandini),500 ml,,28,26,90
+Dairy,Curd (Amul),400 g,,40,36,60
+Dairy,Curd (Mother Dairy),400 g,,38,35,50
+Dairy,Paneer (Amul),200 g,,90,85,40
+Dairy,Butter (Amul),100 g,,58,55,50
+Dairy,Butter (Amul),500 g,,285,270,20
+Dairy,Cheese Slices (Amul),100 g,,80,75,30
+Dairy,Lassi (Amul),200 ml,,25,22,40
+Personal Care,Toilet Soap (Lux),100 g,,45,40,80
+Personal Care,Toilet Soap (Dove),100 g,,65,58,50
+Personal Care,Toilet Soap (Pears),100 g,,55,50,40
+Personal Care,Toilet Soap (Lifebuoy),100 g,,35,32,70
+Personal Care,Handwash (Dettol),200 ml,,99,89,40
+Personal Care,Shampoo (Clinic Plus),180 ml,,120,110,35
+Personal Care,Shampoo (Head & Shoulders),180 ml,,160,145,25
+Personal Care,Toothpaste (Colgate),100 g,,85,78,50
+Personal Care,Toothpaste (Pepsodent),100 g,,75,68,40
+Personal Care,Toothbrush (Colgate),1 pc,,40,35,60
+Personal Care,Face Cream (Pond's),50 g,,99,90,30
+Personal Care,Hair Oil (Parachute),200 ml,,110,99,40
+Personal Care,Body Lotion (Nivea),200 ml,,250,230,20
+Household,Dishwashing Soap (Vim Bar),150 g,,25,22,80
+Household,Dishwashing Liquid (Vim),500 ml,,110,99,40
+Household,Detergent Powder (Surf Excel),1 kg,,180,165,50
+Household,Detergent Powder (Tide),1 kg,,160,145,40
+Household,Detergent Powder (Ariel),1 kg,,190,175,30
+Household,Floor Cleaner (Lizol),500 ml,,110,99,35
+Household,Toilet Cleaner (Harpic),500 ml,,105,95,40
+Household,Phenyl,1 L,,80,70,30
+Household,Garbage Bags (Medium),30 pcs,,60,55,50
+Household,Scrub Pad,2 pcs,,30,25,60
+Snacks,Parle-G Biscuits,800 g,,70,65,80
+Snacks,Parle-G Biscuits,250 g,,25,22,100
+Snacks,Marie Gold Biscuits,250 g,,40,35,70
+Snacks,Good Day Biscuits,200 g,,40,36,60
+Snacks,Hide & Seek Biscuits,200 g,,50,45,40
+Snacks,Oreo Biscuits,120 g,,40,35,50
+Snacks,Kurkure,90 g,,20,18,80
+Snacks,Lays Classic,50 g,,20,18,70
+Snacks,Bingo Mad Angles,80 g,,20,18,50
+Snacks,Haldiram's Bhujia,200 g,,60,55,40
+Snacks,Haldiram's Mixture,200 g,,55,50,35
+Beverages,Tea (Tata Gold),250 g,,140,129,50
+Beverages,Tea (Red Label),250 g,,130,119,40
+Beverages,Coffee (Nescafe),50 g,,150,140,30
+Beverages,Coffee (Bru),50 g,,140,130,25
+Beverages,Soft Drink (Coca Cola),750 ml,,40,35,60
+Beverages,Soft Drink (Thums Up),750 ml,,40,35,50
+Beverages,Soft Drink (Sprite),750 ml,,40,35,45
+Beverages,Fruit Juice (Real),1 L,,120,110,30
+Beverages,Mineral Water (Kinley),1 L,,20,18,100
+Beverages,Mineral Water (Bisleri),1 L,,20,18,80
+Spices,Turmeric Powder,100 g,,40,35,60
+Spices,Red Chilli Powder,100 g,,50,45,50
+Spices,Coriander Powder,100 g,,40,35,50
+Spices,Garam Masala,50 g,,45,40,40
+Spices,Cumin Seeds (Jeera),100 g,,60,55,40
+Spices,Mustard Seeds,100 g,,35,30,50
+Spices,Black Pepper,50 g,,80,75,30
+Spices,Asafoetida (Hing),50 g,,90,85,25
+Spices,Cinnamon Stick,50 g,,70,65,20
+Instant Food,Maggi Noodles,70 g,,14,12,100
+Instant Food,Maggi Noodles (Pack of 12),, ,160,145,40
+Instant Food,Top Ramen,70 g,,12,10,80
+Instant Food,Yippee Noodles,70 g,,12,10,60
+Instant Food,Ready-to-Eat Dal Fry (MTR),300 g,,80,72,25
+Instant Food,Ready-to-Eat Paneer Butter Masala (MTR),300 g,,110,99,20
+Baby Care,Baby Soap (Johnson's),100 g,,55,50,30
+Baby Care,Baby Powder (Johnson's),200 g,,140,130,20
+Baby Care,Diapers (Pampers) M,10 pcs,,320,299,15
+Others,Matchbox (10 pcs),, ,15,12,100
+Others,Candles (Packet),, ,30,25,50
+Others,Batteries AA (4 pcs),, ,80,70,40
+Others,Notebook (Ruled 200 pages),, ,50,45,30
+Others,Pen (Packet of 10),, ,40,35,40
