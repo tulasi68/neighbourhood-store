@@ -2,6 +2,8 @@
  * GET  /api/orders?store_id=&mobile=
  * POST /api/orders
  * PUT  /api/orders/:id
+ *
+ * UPDATED: POST now persists delivery_mode + delivery_fee
  */
 export async function onRequest(context) {
   const { request, env } = context;
@@ -34,16 +36,24 @@ export async function onRequest(context) {
       const body = await request.json();
       const orderRef = 'NS-' + Math.random().toString(36).substring(2, 8).toUpperCase();
 
+      // Persist delivery preference + fee sent by buyer checkout
+      const deliveryMode = body.delivery_mode || 'self';
+      const deliveryFee = parseFloat(body.delivery_fee) || 0;
+
       const result = await db.prepare(
-        `INSERT INTO orders (order_ref, store_id, buyer_mobile, buyer_name, payment_method, total_amount, status)
-         VALUES (?, ?, ?, ?, ?, ?, 'placed')`
+        `INSERT INTO orders
+           (order_ref, store_id, buyer_mobile, buyer_name, payment_method,
+            total_amount, delivery_mode, delivery_fee, status)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'placed')`
       ).bind(
         orderRef,
         body.store_id,
         body.buyer_mobile,
         body.buyer_name || '',
         body.payment_method,
-        body.total_amount
+        body.total_amount,
+        deliveryMode,
+        deliveryFee
       ).run();
 
       const orderId = result.meta.last_row_id;
@@ -75,6 +85,8 @@ export async function onRequest(context) {
           id: orderId,
           order_ref: orderRef,
           total_amount: body.total_amount,
+          delivery_mode: deliveryMode,
+          delivery_fee: deliveryFee,
           status: 'placed'
         }
       });
@@ -82,11 +94,33 @@ export async function onRequest(context) {
 
     if (method === 'PUT' && id) {
       const body = await request.json();
-      if (body.status) {
-        await db.prepare(
-          `UPDATE orders SET status = ?, updated_at = datetime('now') WHERE id = ?`
-        ).bind(body.status, id).run();
+
+      // Allow updating status and/or delivery fields (shopkeeper override)
+      const fields = [];
+      const values = [];
+
+      if (body.status)        { fields.push('status = ?');        values.push(body.status); }
+      if (body.delivery_mode) { fields.push('delivery_mode = ?'); values.push(body.delivery_mode); }
+      if (body.delivery_fee !== undefined) {
+        fields.push('delivery_fee = ?');
+        values.push(parseFloat(body.delivery_fee) || 0);
       }
+      if (body.payment_status) {
+        fields.push('payment_status = ?');
+        values.push(body.payment_status);
+      }
+
+      if (fields.length === 0) {
+        return json({ error: 'No updatable fields provided' }, 400);
+      }
+
+      fields.push("updated_at = datetime('now')");
+      values.push(id);
+
+      await db.prepare(
+        `UPDATE orders SET ${fields.join(', ')} WHERE id = ?`
+      ).bind(...values).run();
+
       return json({ success: true });
     }
 
