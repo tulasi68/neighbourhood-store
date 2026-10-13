@@ -30,7 +30,7 @@ const API = {
         console.warn('→ falling back to demo mock');
         return this._mock(path, options);
       }
-      throw err;   // surface real errors to the UI
+      throw err;
     }
   },
 
