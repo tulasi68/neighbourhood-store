@@ -5,4 +5,4 @@ pages_build_output_dir = "public"
 [[d1_databases]]
 binding = "DB"
 database_name = "neighbourhood-store-db"
-database_id = "REPLACE_WITH_YOUR_D1_DATABASE_ID"   # run: wrangler d1 create neighbourhood-store-db
+database_id = "61c12deb-ea8d-4fb9-bb89-7095aa81d27f"   # run: wrangler d1 create neighbourhood-store-db
