@@ -1,5 +1,6 @@
 /**
  * Buyer flows: OTP login → select store → browse → cart → checkout
+ * UPDATED: delivery/LSP awareness at checkout + order history
  */
 const Buyer = {
   tempMobile: '',
@@ -39,7 +40,6 @@ const Buyer = {
     }
     this.tempName = name;
     this.tempMobile = mobile;
-
     try {
       const res = await API.post('/auth/request-otp', { mobile });
       this.showOTPForm(res.demo_otp);
@@ -89,7 +89,6 @@ const Buyer = {
     const nav = document.getElementById('bottom-nav');
     nav.classList.remove('hidden');
     this.renderNav(nav, 'stores');
-
     app.innerHTML = `<div class="card"><p>Loading stores…</p></div>`;
     try {
       const { stores } = await API.get('/stores');
@@ -120,17 +119,12 @@ const Buyer = {
 
   async showProducts() {
     const app = document.getElementById('app');
-    const nav = document.getElementById('bottom-nav');
-    this.renderNav(nav, 'products');
-
+    this.renderNav(document.getElementById('bottom-nav'), 'products');
     const store = App.state.selectedStore;
     app.innerHTML = `<div class="card"><p>Loading products…</p></div>`;
-
     try {
       let { products } = await API.get(`/products?store_id=${store.id}`);
-      if (!products || products.length === 0) {
-        products = this._demoProducts(store.id);
-      }
+      if (!products || products.length === 0) products = this._demoProducts(store.id);
       this.products = products;
       this._renderProductList(app, products);
     } catch (e) {
@@ -153,20 +147,14 @@ const Buyer = {
   _renderProductList(app, products) {
     const store = App.state.selectedStore;
     const categories = ['All', ...new Set(products.map(p => p.category).filter(Boolean))];
-    const filtered = this.filterCategory === 'All'
-      ? products
-      : products.filter(p => p.category === this.filterCategory);
-
+    const filtered = this.filterCategory === 'All' ? products : products.filter(p => p.category === this.filterCategory);
     app.innerHTML = `
       <div style="margin-bottom:8px">
         <strong>${store.name}</strong>
         <button class="btn btn-sm btn-outline" style="float:right" onclick="Buyer.showStoreList()">Change</button>
       </div>
       <div class="chips">
-        ${categories.map(c => `
-          <span class="chip ${c === this.filterCategory ? 'active' : ''}"
-                onclick="Buyer.setCategory('${c}')">${c}</span>
-        `).join('')}
+        ${categories.map(c => `<span class="chip ${c === this.filterCategory ? 'active' : ''}" onclick="Buyer.setCategory('${c}')">${c}</span>`).join('')}
       </div>
       <div class="card" style="padding:8px 16px">
         ${filtered.length === 0 ? '<div class="empty">No products in this category</div>' :
@@ -175,51 +163,32 @@ const Buyer = {
               <div class="product-info">
                 <h4>${p.name}</h4>
                 <div class="meta">${[p.weight, p.volume].filter(Boolean).join(' · ')} ${p.category ? '· ' + p.category : ''}</div>
-                <div>
-                  <span class="price">₹${p.selling_price}</span>
-                  ${p.mrp && p.mrp > p.selling_price ? `<span class="mrp">₹${p.mrp}</span>` : ''}
-                </div>
+                <div><span class="price">₹${p.selling_price}</span>${p.mrp && p.mrp > p.selling_price ? `<span class="mrp">₹${p.mrp}</span>` : ''}</div>
               </div>
               <button class="btn btn-primary btn-sm" onclick='Buyer.addProduct(${JSON.stringify(p).replace(/'/g, "&#39;")})'>+ Add</button>
             </div>
           `).join('')}
       </div>
-      ${App.cartCount() > 0 ? `
-        <div class="cart-bar" onclick="Buyer.showCart()">
-          <span>${App.cartCount()} items</span>
-          <span>₹${App.cartTotal().toFixed(0)} · View Cart →</span>
-        </div>
-      ` : ''}
+      ${App.cartCount() > 0 ? `<div class="cart-bar" onclick="Buyer.showCart()"><span>${App.cartCount()} items</span><span>₹${App.cartTotal().toFixed(0)} · View Cart →</span></div>` : ''}
     `;
   },
 
-  setCategory(cat) {
-    this.filterCategory = cat;
-    this._renderProductList(document.getElementById('app'), this.products);
-  },
-
-  addProduct(p) {
-    App.addToCart(p, 1);
-  },
+  setCategory(cat) { this.filterCategory = cat; this._renderProductList(document.getElementById('app'), this.products); },
+  addProduct(p) { App.addToCart(p, 1); },
 
   showCart() {
     const app = document.getElementById('app');
     this.renderNav(document.getElementById('bottom-nav'), 'cart');
-
     if (App.state.cart.length === 0) {
       app.innerHTML = `<div class="empty">Your cart is empty.<br><button class="btn btn-primary" style="margin-top:12px" onclick="Buyer.showProducts()">Browse Products</button></div>`;
       return;
     }
-
     app.innerHTML = `
       <h2 style="margin-bottom:12px">Your Cart</h2>
       <div class="card">
         ${App.state.cart.map(c => `
           <div class="product-item">
-            <div class="product-info">
-              <h4>${c.product.name}</h4>
-              <div class="meta">₹${c.product.selling_price} × ${c.qty}</div>
-            </div>
+            <div class="product-info"><h4>${c.product.name}</h4><div class="meta">₹${c.product.selling_price} × ${c.qty}</div></div>
             <div class="qty-control">
               <button onclick="App.updateQty(${c.product.id}, -1)">−</button>
               <span>${c.qty}</span>
@@ -228,8 +197,7 @@ const Buyer = {
           </div>
         `).join('')}
         <div style="margin-top:16px;padding-top:12px;border-top:1px solid var(--border);display:flex;justify-content:space-between;font-weight:700">
-          <span>Total</span>
-          <span>₹${App.cartTotal().toFixed(0)}</span>
+          <span>Total</span><span>₹${App.cartTotal().toFixed(0)}</span>
         </div>
       </div>
       <button class="btn btn-success btn-block" onclick="Buyer.showCheckout()">Proceed to Checkout</button>
@@ -237,11 +205,33 @@ const Buyer = {
     `;
   },
 
+  /**
+   * Compute delivery fee + label from the store's delivery_config.
+   * Fallback: if no config, assume 'self' with 0 fee.
+   */
+  _getDeliveryInfo(store) {
+    let cfg = {};
+    try { cfg = JSON.parse(store.delivery_config || '{}'); } catch (e) {}
+    const mode = cfg.mode || 'self';
+    const fee = mode === 'self' ? (cfg.self_fee || 0) : (cfg.lsp_fee_estimate || 0);
+
+    const labels = {
+      self: '🏪 Self delivery (store\'s own person)',
+      borzo: '🛵 Borzo (on-demand bike)',
+      uber_direct: '🚗 Uber Direct (on-demand bike)',
+      auto: '🚚 Assigned by store after acceptance'
+    };
+    return { mode, fee, label: labels[mode] || labels.self, cfg };
+  },
+
   showCheckout() {
     const store = App.state.selectedStore;
     const paymentOpts = (store.payment_options || []).filter(o => o.enabled);
-    const app = document.getElementById('app');
+    const del = this._getDeliveryInfo(store);
+    const goodsTotal = App.cartTotal();
+    const grandTotal = goodsTotal + (del.fee || 0);
 
+    const app = document.getElementById('app');
     app.innerHTML = `
       <h2 style="margin-bottom:12px">Checkout</h2>
       <div class="card">
@@ -249,25 +239,39 @@ const Buyer = {
         <p style="font-size:0.85rem;color:var(--muted)">${store.address}</p>
         <p style="font-size:0.85rem;color:var(--muted)">📞 ${store.phone}</p>
       </div>
+
       <div class="card">
         <h3>Payment Method</h3>
         ${paymentOpts.length === 0 ? '<p class="empty">No payment options configured by store.</p>' :
           paymentOpts.map((o, i) => `
             <label style="display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--border)">
               <input type="radio" name="pay" value="${o.type}" ${i === 0 ? 'checked' : ''} />
-              <div>
-                <strong>${o.label}</strong>
-                ${o.details ? `<div style="font-size:0.8rem;color:var(--muted)">${o.details}</div>` : ''}
-              </div>
+              <div><strong>${o.label}</strong>${o.details ? `<div style="font-size:0.8rem;color:var(--muted)">${o.details}</div>` : ''}</div>
             </label>
           `).join('')}
       </div>
+
       <div class="card">
-        <div style="display:flex;justify-content:space-between;font-weight:700;font-size:1.1rem">
-          <span>Order Total</span>
-          <span>₹${App.cartTotal().toFixed(0)}</span>
+        <h3>Delivery</h3>
+        <p style="font-size:0.9rem;color:var(--muted);margin:6px 0 10px">
+          ${del.label}
+        </p>
+        <div style="display:flex;justify-content:space-between;font-size:0.95rem">
+          <span>Goods</span><span>₹${goodsTotal.toFixed(0)}</span>
+        </div>
+        <div style="display:flex;justify-content:space-between;font-size:0.95rem;margin-top:6px">
+          <span>Delivery fee</span>
+          <span>${del.fee > 0 ? '₹' + del.fee.toFixed(0) : (del.mode === 'auto' ? 'Set by store' : 'Free')}</span>
         </div>
       </div>
+
+      <div class="card">
+        <div style="display:flex;justify-content:space-between;font-weight:700;font-size:1.1rem">
+          <span>Order Total</span><span>₹${grandTotal.toFixed(0)}</span>
+        </div>
+        ${del.fee > 0 ? `<p style="font-size:0.8rem;color:var(--muted);margin-top:6px">Includes ₹${del.fee.toFixed(0)} delivery fee</p>` : ''}
+      </div>
+
       <button class="btn btn-success btn-block" onclick="Buyer.placeOrder()">Place Order</button>
       <button class="btn btn-outline btn-block" onclick="Buyer.showCart()">Back to Cart</button>
     `;
@@ -275,16 +279,21 @@ const Buyer = {
 
   async placeOrder() {
     const payEl = document.querySelector('input[name="pay"]:checked');
-    if (!payEl) {
-      App.toast('Select a payment method');
-      return;
-    }
+    if (!payEl) { App.toast('Select a payment method'); return; }
+
+    const store = App.state.selectedStore;
+    const del = this._getDeliveryInfo(store);
+    const goodsTotal = App.cartTotal();
+    const grandTotal = goodsTotal + (del.fee || 0);
+
     const payload = {
-      store_id: App.state.selectedStore.id,
+      store_id: store.id,
       buyer_mobile: App.state.user.mobile,
       buyer_name: App.state.user.name,
       payment_method: payEl.value,
-      total_amount: App.cartTotal(),
+      total_amount: grandTotal,
+      delivery_mode: del.mode,
+      delivery_fee: del.fee || 0,
       items: App.state.cart.map(c => ({
         product_id: c.product.id,
         product_name: c.product.name,
@@ -312,9 +321,7 @@ const Buyer = {
         <h2 style="margin:12px 0">Order Placed!</h2>
         <p style="font-size:1.1rem">Order Reference</p>
         <p style="font-size:1.6rem;font-weight:700;letter-spacing:2px;margin:8px 0">${order.order_ref}</p>
-        <p style="color:var(--muted);font-size:0.9rem">
-          Save this reference. Show it at the store or use it to track your order.
-        </p>
+        <p style="color:var(--muted);font-size:0.9rem">Save this reference. Show it at the store or use it to track your order.</p>
         <p style="margin-top:12px"><strong>Total: ₹${order.total_amount || App.cartTotal().toFixed(0)}</strong></p>
         <button class="btn btn-primary btn-block" style="margin-top:20px" onclick="Buyer.showStoreList()">Order from another store</button>
         <button class="btn btn-outline btn-block" onclick="Buyer.showOrderHistory()">View My Orders</button>
@@ -329,39 +336,46 @@ const Buyer = {
     try {
       const { orders } = await API.get(`/orders?mobile=${App.state.user.mobile}`);
       const mine = (orders || []).filter(o => o.buyer_mobile === App.state.user.mobile);
-      if (mine.length === 0) {
-        app.innerHTML = `<div class="empty">No previous orders yet.</div>`;
-        return;
-      }
+      if (mine.length === 0) { app.innerHTML = `<div class="empty">No previous orders yet.</div>`; return; }
+
+      // Fetch deliveries for these orders (best-effort; falls back gracefully)
+      let deliveries = [];
+      try {
+        const res = await API.get('/deliveries');
+        deliveries = res.deliveries || [];
+      } catch (e) { /* ignore — no delivery yet */ }
+
+      const deliveryByOrder = {};
+      for (const d of deliveries) deliveryByOrder[d.order_id] = d;
+
       app.innerHTML = `
         <h2 style="margin-bottom:12px">My Orders</h2>
-        ${mine.map(o => `
+        ${mine.map(o => {
+          const d = deliveryByOrder[o.id];
+          const delLine = d
+            ? `<p style="font-size:0.8rem;color:var(--muted);margin-top:4px">
+                 🚚 ${d.lsp_name} · <span class="badge badge-${d.status}">${d.status}</span>
+                 ${d.tracking_url ? ` · <a href="${d.tracking_url}" target="_blank">Track</a>` : ''}
+                 ${d.rider_phone ? ` · 📞 ${d.rider_phone}` : ''}
+               </p>`
+            : '';
+          return `
           <div class="card">
-            <div style="display:flex;justify-content:space-between">
-              <strong>${o.order_ref}</strong>
-              <span class="badge badge-${o.status}">${o.status}</span>
-            </div>
+            <div style="display:flex;justify-content:space-between"><strong>${o.order_ref}</strong><span class="badge badge-${o.status}">${o.status}</span></div>
             <p style="font-size:0.85rem;color:var(--muted)">${new Date(o.created_at).toLocaleString()}</p>
             <p>₹${o.total_amount} · ${o.payment_method}</p>
-          </div>
-        `).join('')}
+            ${delLine}
+          </div>`;
+        }).join('')}
       `;
-    } catch (e) {
-      app.innerHTML = `<div class="empty">Could not load orders.</div>`;
-    }
+    } catch (e) { app.innerHTML = `<div class="empty">Could not load orders.</div>`; }
   },
 
   renderNav(nav, active) {
     nav.innerHTML = `
-      <a href="#" class="${active === 'stores' || active === 'products' ? 'active' : ''}" onclick="Buyer.showStoreList();return false">
-        <span class="icon">🏪</span>Stores
-      </a>
-      <a href="#" class="${active === 'cart' ? 'active' : ''}" onclick="Buyer.showCart();return false">
-        <span class="icon">🛒</span>Cart${App.cartCount() ? ` (${App.cartCount()})` : ''}
-      </a>
-      <a href="#" class="${active === 'orders' ? 'active' : ''}" onclick="Buyer.showOrderHistory();return false">
-        <span class="icon">📋</span>Orders
-      </a>
+      <a href="#" class="${active === 'stores' || active === 'products' ? 'active' : ''}" onclick="Buyer.showStoreList();return false"><span class="icon">🏪</span>Stores</a>
+      <a href="#" class="${active === 'cart' ? 'active' : ''}" onclick="Buyer.showCart();return false"><span class="icon">🛒</span>Cart${App.cartCount() ? ` (${App.cartCount()})` : ''}</a>
+      <a href="#" class="${active === 'orders' ? 'active' : ''}" onclick="Buyer.showOrderHistory();return false"><span class="icon">📋</span>Orders</a>
     `;
   },
 
