@@ -1,6 +1,8 @@
 /**
- * API helper – talks to Cloudflare Pages Functions
- * Falls back to localStorage mock data when offline / demo mode
+ * API helper – talks to Cloudflare Pages Functions.
+ * Falls back to localStorage ONLY if demo mode is explicitly enabled:
+ *   localStorage.setItem('ns_demo_mode', '1')  // enable mock
+ *   localStorage.removeItem('ns_demo_mode')    // disable mock
  */
 const API = {
   base: '/api',
@@ -23,8 +25,12 @@ const API = {
       if (!res.ok) throw new Error(data.error || `HTTP ${res.status}`);
       return data;
     } catch (err) {
-      console.warn('API fallback:', err.message);
-      return this._mock(path, options);
+      console.warn('API error:', path, err.message);
+      if (localStorage.getItem('ns_demo_mode') === '1') {
+        console.warn('→ falling back to demo mock');
+        return this._mock(path, options);
+      }
+      throw err;   // surface real errors to the UI
     }
   },
 
@@ -51,6 +57,7 @@ const API = {
           { type: 'qr', label: 'Scan QR Code', enabled: false, details: '' },
           { type: 'link', label: 'Payment Link', enabled: false, details: '' }
         ],
+        delivery_config: { mode: 'self', self_fee: 0, lsp_fee_estimate: 0 },
         is_active: 1
       });
       localStorage.setItem('ns_stores', JSON.stringify(stores));
@@ -84,7 +91,7 @@ const API = {
         const token = btoa(JSON.stringify({ mobile, role: 'admin', exp: Date.now() + 86400000 }));
         return { token, user: { mobile, role: 'admin', name: 'Admin' } };
       }
-      if (role === 'shopkeeper') {
+      if (role === 'shopkeeper' && pin === 'shop123') {
         const token = btoa(JSON.stringify({ mobile, role: 'shopkeeper', store_id: 1, exp: Date.now() + 86400000 }));
         return { token, user: { mobile, role: 'shopkeeper', store_id: 1, name: 'Shopkeeper' } };
       }
@@ -103,6 +110,10 @@ const API = {
       return { order };
     }
     if (path === '/orders' && method === 'GET') return { orders };
+    if (path === '/deliveries' && method === 'POST') {
+      return { ok: true, delivery_id: Date.now(), lsp_name: options.body.lsp_name };
+    }
+    if (path === '/deliveries' && method === 'GET') return { deliveries: [] };
     return { success: true };
   }
 };
