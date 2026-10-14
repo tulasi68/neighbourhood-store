@@ -402,55 +402,58 @@ const Shopkeeper = {
     `;
   },
 
+  async showAcceptOrder(order) {
+    const app = document.getElementById('app');
+    let mode = 'self';
+    try {
+      const { store } = await API.get(`/stores/${order.store_id}`);
+      mode = (JSON.parse(store.delivery_config || '{}').mode) || 'self';
+    } catch (e) { /* keep default */ }
+
+    const options = [
+      { v: 'self', label: '🏪 Self delivery (own person / pickup)' },
+      { v: 'borzo', label: '🛵 Borzo (on-demand bike)' },
+      { v: 'uber_direct', label: '🚗 Uber Direct (on-demand bike)' }
+    ];
+
+    app.innerHTML = `
+      <div class="card">
+        <h2>Accept Order ${order.order_ref}</h2>
+        <p style="color:var(--muted);font-size:0.9rem">Choose how this order will be delivered.</p>
+        ${options.map(o => `
+          <label style="display:flex;align-items:center;gap:10px;padding:12px 0;border-bottom:1px solid var(--border)">
+            <input type="radio" name="lsp" value="${o.v}" ${o.v === mode ? 'checked' : ''} />
+            <div>${o.label}</div>
+          </label>
+        `).join('')}
+        <div class="form-group" style="margin-top:14px">
+          <label>Delivery charge (₹) — optional</label>
+          <input type="number" id="lsp-fee" class="form-control" value="0" />
+        </div>
+        <button class="btn btn-success btn-block" onclick="Shopkeeper.confirmAccept(${order.id})">Accept & Dispatch</button>
+        <button class="btn btn-outline btn-block" onclick="Shopkeeper.showOrders()">Cancel</button>
+      </div>
+    `;
+  },
+
+  async confirmAccept(orderId) {
+    const lspEl = document.querySelector('input[name="lsp"]:checked');
+    const lsp = lspEl ? lspEl.value : 'self';
+    const fee = parseFloat(document.getElementById('lsp-fee').value) || 0;
+    try {
+      const res = await API.post('/deliveries', { order_id: orderId, lsp_name: lsp, fee });
+      if (!res.ok) {
+        App.toast(res.error || 'LSP failed; order marked accepted but no rider');
+      } else {
+        App.toast(lsp === 'self' ? 'Order accepted — self delivery' : `Rider requested via ${lsp}`);
+      }
+      this.showOrders();
+    } catch (e) {
+      App.toast(e.message || 'Could not dispatch');
+    }
+  },
+
   render(app, nav) {
     this.showDashboard();
   }
 };
-
-// Add to Shopkeeper object
-async showAcceptOrder(order) {
-  const app = document.getElementById('app');
-  const { store } = await API.get(`/stores/${order.store_id}`);
-  const mode = (JSON.parse(store.delivery_config || '{}').mode) || 'self';
-
-  const options = [
-    { v: 'self', label: '🏪 Self delivery (own person / pickup)' },
-    { v: 'borzo', label: '🛵 Borzo (on-demand bike)' },
-    { v: 'uber_direct', label: '🚗 Uber Direct (on-demand bike)' }
-  ];
-
-  app.innerHTML = `
-    <div class="card">
-      <h2>Accept Order ${order.order_ref}</h2>
-      <p style="color:var(--muted);font-size:0.9rem">Choose how this order will be delivered.</p>
-      ${options.map(o => `
-        <label style="display:flex;align-items:center;gap:10px;padding:12px 0;border-bottom:1px solid var(--border)">
-          <input type="radio" name="lsp" value="${o.v}" ${o.v === mode ? 'checked' : ''} />
-          <div>${o.label}</div>
-        </label>
-      `).join('')}
-      <div class="form-group" style="margin-top:14px">
-        <label>Delivery charge (₹) — optional</label>
-        <input type="number" id="lsp-fee" class="form-control" value="0" />
-      </div>
-      <button class="btn btn-success btn-block" onclick="Shopkeeper.confirmAccept(${order.id})">Accept & Dispatch</button>
-      <button class="btn btn-outline btn-block" onclick="Shopkeeper.showOrders()">Cancel</button>
-    </div>
-  `;
-},
-
-async confirmAccept(orderId) {
-  const lsp = document.querySelector('input[name="lsp"]:checked').value;
-  const fee = parseFloat(document.getElementById('lsp-fee').value) || 0;
-  try {
-    const res = await API.post('/deliveries', { order_id: orderId, lsp_name: lsp, fee });
-    if (!res.ok) {
-      App.toast(res.error || 'LSP failed; order marked accepted but no rider');
-    } else {
-      App.toast(lsp === 'self' ? 'Order accepted — self delivery' : `Rider requested via ${lsp}`);
-    }
-    this.showOrders();
-  } catch (e) {
-    App.toast(e.message || 'Could not dispatch');
-  }
-}
