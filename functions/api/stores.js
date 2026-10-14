@@ -21,6 +21,10 @@ export async function onRequest(context) {
 
     if (method === 'GET' && !id) {
       const { results } = await db.prepare('SELECT * FROM stores WHERE is_active = 1 ORDER BY name').all();
+      for (const s of results) {
+        try { s.payment_options = JSON.parse(s.payment_options); } catch (e) {}
+        try { s.delivery_config = JSON.parse(s.delivery_config); } catch (e) {}
+      }
       return json({ stores: results });
     }
 
@@ -28,6 +32,7 @@ export async function onRequest(context) {
       const store = await db.prepare('SELECT * FROM stores WHERE id = ?').bind(id).first();
       if (!store) return json({ error: 'Not found' }, 404);
       try { store.payment_options = JSON.parse(store.payment_options); } catch(e) {}
+      try { store.delivery_config = JSON.parse(store.delivery_config); } catch(e) {}
       return json({ store });
     }
 
