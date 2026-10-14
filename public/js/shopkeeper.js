@@ -253,9 +253,9 @@ const Shopkeeper = {
               <p>₹${o.total_amount} · ${o.payment_method}</p>
               ${o.delivery_mode ? `<p style="font-size:0.8rem;color:var(--muted)">Delivery: ${o.delivery_mode}${o.delivery_fee ? ' · ₹' + o.delivery_fee : ''}</p>` : ''}
               <div style="margin-top:8px;display:flex;gap:6px;flex-wrap:wrap">
-                ${o.status === 'placed' ? `<button class="btn btn-sm btn-success" onclick="Shopkeeper.showAcceptOrder(${o.id})">Accept & Dispatch</button>` : ''}
-                ${['accepted','preparing','ready','completed','cancelled'].map(s =>
-                  `<button class="btn btn-sm btn-outline" onclick="Shopkeeper.updateStatus(${o.id},'${s}')">${s}</button>`
+                ${['placed','accepted','preparing','ready'].includes(o.status) ? `<button class="btn btn-sm btn-success" onclick="Shopkeeper.showAcceptOrder(${o.id})">Accept & Dispatch</button>` : ''}
+                ${['placed','accepted','preparing','ready','completed','cancelled'].map(s =>
+                  `<button class="btn btn-sm btn-outline ${o.status === s ? 'btn-primary' : ''}" onclick="Shopkeeper.updateStatus(${o.id},'${s}')">${s}</button>`
                 ).join('')}
               </div>
             </div>
