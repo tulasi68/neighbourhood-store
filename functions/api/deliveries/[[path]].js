@@ -76,7 +76,7 @@ export async function onRequest(context) {
         result.fee || 0,
         result.tracking_url || null,
         result.rider_name || null,
-        result.phone || null,
+        result.rider_phone || null,
         result.ok ? null : (result.error || 'create failed')
       ).run();
 
