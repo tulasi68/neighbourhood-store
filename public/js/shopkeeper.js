@@ -64,7 +64,7 @@ const Shopkeeper = {
         <div class="role-card" onclick="Shopkeeper.showOrders()">
           <div class="emoji">🧾</div>
           <h3>Orders</h3>
-          <p style="font-size:0.85rem;color:var(--muted)">View & update status</p>
+          <p style="font-size:0.85rem;color:var(--muted)">Accept, dispatch & update status</p>
         </div>
         <div class="role-card" onclick="Shopkeeper.showPaymentOptions()">
           <div class="emoji">💳</div>
@@ -251,7 +251,9 @@ const Shopkeeper = {
               </div>
               <p style="font-size:0.85rem">${o.buyer_name || ''} · ${o.buyer_mobile}</p>
               <p>₹${o.total_amount} · ${o.payment_method}</p>
+              ${o.delivery_mode ? `<p style="font-size:0.8rem;color:var(--muted)">Delivery: ${o.delivery_mode}${o.delivery_fee ? ' · ₹' + o.delivery_fee : ''}</p>` : ''}
               <div style="margin-top:8px;display:flex;gap:6px;flex-wrap:wrap">
+                ${o.status === 'placed' ? `<button class="btn btn-sm btn-success" onclick="Shopkeeper.showAcceptOrder(${o.id})">Accept & Dispatch</button>` : ''}
                 ${['accepted','preparing','ready','completed','cancelled'].map(s =>
                   `<button class="btn btn-sm btn-outline" onclick="Shopkeeper.updateStatus(${o.id},'${s}')">${s}</button>`
                 ).join('')}
@@ -402,12 +404,19 @@ const Shopkeeper = {
     `;
   },
 
-  async showAcceptOrder(order) {
+  async showAcceptOrder(orderId) {
+    const order = this.orders.find(o => o.id === orderId);
+    if (!order) { App.toast('Order not found'); return; }
+
     const app = document.getElementById('app');
     let mode = 'self';
     try {
-      const { store } = await API.get(`/stores/${order.store_id}`);
-      mode = (JSON.parse(store.delivery_config || '{}').mode) || 'self';
+      const storeId = order.store_id || App.state.user.store_id || 1;
+      const { store } = await API.get(`/stores/${storeId}`);
+      const cfg = typeof store.delivery_config === 'string'
+        ? JSON.parse(store.delivery_config || '{}')
+        : (store.delivery_config || {});
+      mode = cfg.mode || 'self';
     } catch (e) { /* keep default */ }
 
     const options = [
@@ -419,7 +428,8 @@ const Shopkeeper = {
     app.innerHTML = `
       <div class="card">
         <h2>Accept Order ${order.order_ref}</h2>
-        <p style="color:var(--muted);font-size:0.9rem">Choose how this order will be delivered.</p>
+        <p style="color:var(--muted);font-size:0.9rem">${order.buyer_name || ''} · ${order.buyer_mobile} · ₹${order.total_amount}</p>
+        <p style="color:var(--muted);font-size:0.9rem;margin-bottom:8px">Choose who will deliver this order.</p>
         ${options.map(o => `
           <label style="display:flex;align-items:center;gap:10px;padding:12px 0;border-bottom:1px solid var(--border)">
             <input type="radio" name="lsp" value="${o.v}" ${o.v === mode ? 'checked' : ''} />
